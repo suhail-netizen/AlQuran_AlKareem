@@ -1,4 +1,6 @@
-data/
+data/_page_shots/
+data/svg/*-surah*.svg
+data/json/*-surah*.json
 __pycache__/
 *.pyc
 *.pdf

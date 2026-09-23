@@ -1,0 +1,161 @@
+{
+  "mushaf": "hafs-madinah-mumtaza",
+  "asset": "page-frame",
+  "page": 300,
+  "source": "hafs-madinah-mumtaza.pdf",
+  "riwayah": "Hafs 'an 'Asim (Madinah, mumtaza)",
+  "generated": "2026-09-10 02:08",
+  "page_px": [
+    1816,
+    2609
+  ],
+  "boxes": [
+    [
+      72,
+      202,
+      1596,
+      2408
+    ]
+  ],
+  "pick": 0,
+  "provenance": {
+    "mushaf": "hafs-madinah-mumtaza",
+    "riwayah": "Hafs 'an 'Asim (Madinah, mumtaza)",
+    "file": "hafs-madinah-mumtaza.pdf",
+    "sha256": "e90a6c6285a77400e4316b775f1badbb66d72a5a6f2d1722bc482ef702b4903a",
+    "url": "https://dn721909.ca.archive.org/0/items/20240718_20240718_0417/%D9%85%D8%B5%D8%AD%D9%81%20%D8%A7%D9%84%D9%85%D8%AF%D9%8A%D9%86%D8%A9%20%D8%A7%D9%84%D9%86%D8%A8%D9%88%D9%8A%D8%A9%20%D8%A8%D8%B1%D9%88%D8%A7%D9%8A%D8%A9%20%D8%AD%D9%81%D8%B5%20-%20%D8%A7%D9%84%D9%85%D9%85%D8%AA%D8%A7%D8%B2%D8%A9.pdf",
+    "archive_item": "20240718_20240718_0417",
+    "archive_url": "https://archive.org/details/20240718_20240718_0417",
+    "pdf_page": 300,
+    "crop_box_px": [
+      72,
+      202,
+      1596,
+      2408
+    ],
+    "occurrence": 0,
+    "occurrences_on_page": 1,
+    "pipeline": "quran-assets 3011d73",
+    "pipeline_sha256": "cb8d14caa65815e6eb7c1ba1137bdbc9c5f4ed1c90b89aad7ee822a28981c3e2",
+    "extracted": "2026-09-10T02:08:21+0300"
+  },
+  "slot_px": [
+    206,
+    206,
+    1318,
+    1998
+  ],
+  "slot_fill": "#ffffff",
+  "symmetry": {
+    "folds": 4,
+    "deskew_deg": 0.0,
+    "axes_px": [
+      762.0,
+      1103.0
+    ],
+    "residual": {
+      "lr": 1.52,
+      "ud": 2.87,
+      "both": 3.36
+    },
+    "baseline": 73.87
+  },
+  "stroke_widths_px": [
+    2.0,
+    5.0
+  ],
+  "viewBox": "0 0 69.084 100",
+  "slot": "9.3382 9.3382 50.408 81.233",
+  "palette": [
+    {
+      "class": "slot",
+      "hex": "none",
+      "paths": 1
+    },
+    {
+      "class": "c1",
+      "hex": "#ffffff",
+      "paths": 1
+    },
+    {
+      "class": "c2",
+      "hex": "#f7e45d",
+      "paths": 2
+    },
+    {
+      "class": "c3",
+      "hex": "#d4ded5",
+      "paths": 1
+    },
+    {
+      "class": "c4",
+      "hex": "#75b695",
+      "paths": 6
+    },
+    {
+      "class": "c5",
+      "hex": "#d97c71",
+      "paths": 1
+    },
+    {
+      "class": "c6",
+      "hex": "#d98222",
+      "paths": 1
+    },
+    {
+      "class": "c7",
+      "hex": "#4c7257",
+      "paths": 1
+    },
+    {
+      "class": "line",
+      "hex": "#373b39",
+      "paths": 33,
+      "stroke": true
+    }
+  ],
+  "mono_paths": 5,
+  "slices": {
+    "files": {
+      "corner": "slices/corner.svg",
+      "edge-h": "slices/edge-h.svg",
+      "edge-v": "slices/edge-v.svg"
+    },
+    "corner_px": [
+      0,
+      0,
+      343,
+      240
+    ],
+    "edge_h_px": [
+      343,
+      0,
+      552,
+      206
+    ],
+    "edge_v_px": [
+      0,
+      240,
+      206,
+      456
+    ],
+    "repeat_px": {
+      "h": 209,
+      "v": 216
+    },
+    "repeats": {
+      "h": 4,
+      "v": 7
+    },
+    "band_px": {
+      "top": 206,
+      "left": 206
+    },
+    "frame_px": [
+      1524,
+      2206
+    ],
+    "corner_mode": "mirror",
+    "reconstruction_iou": 0.9063
+  }
+}
