@@ -1,6 +1,6 @@
-# Mushaf Overlay App v2 - builds the 604-page mushaf from the vector page compositor, with
-# Ramadan rak'ah markers, standard ruku markers, and Juz/Hizb/Half-Hizb/Quarter division markers
-# all independently toggleable and freely combinable. Two output stages, each usable on its own:
+# Mushaf Overlay App v2 - builds the 604-page mushaf from the vector page compositor, with theme
+# colours, Ramadan rak'ah markers, standard ruku markers, and Juz/Hizb/Half-Hizb/Quarter division
+# markers all independently toggleable and freely combinable. Two output stages, each usable on its own:
 # generate_html_pages() writes the 604 HTML pages (viewable directly, no PDF needed), and
 # render_pdf_from_html() prints an existing HTML folder to a merged PDF via Puppeteer (subprocess,
 # one Node call handling all pages in one browser session for speed, each page its own isolated
@@ -18,11 +18,11 @@ TOTAL_PAGES = 604
 
 
 def generate_html_pages(html_dir, show_ramadan=False, show_standard_ruku=False, enabled_divisions=frozenset(),
-                        progress_callback=None):
+                        progress_callback=None, show_themes=False):
     data = MushafData()
     os.makedirs(html_dir, exist_ok=True)
     for page_num in range(1, TOTAL_PAGES + 1):
-        html = build_page_html(data, page_num, show_ramadan, show_standard_ruku, enabled_divisions)
+        html = build_page_html(data, page_num, show_ramadan, show_standard_ruku, enabled_divisions, show_themes)
         with open(os.path.join(html_dir, f'{page_num:03d}.html'), 'w', encoding='utf-8') as f:
             f.write(html)
         if progress_callback:
@@ -51,9 +51,9 @@ def render_pdf_from_html(html_dir, output_path, progress_callback=None):
 
 
 def build_pdf(output_path, show_ramadan=False, show_standard_ruku=False, enabled_divisions=frozenset(),
-              progress_callback=None):
+              progress_callback=None, show_themes=False):
     html_dir = os.path.join(HERE, '_build_html')
-    generate_html_pages(html_dir, show_ramadan, show_standard_ruku, enabled_divisions, progress_callback)
+    generate_html_pages(html_dir, show_ramadan, show_standard_ruku, enabled_divisions, progress_callback, show_themes)
     render_pdf_from_html(html_dir, output_path, progress_callback)
 
 

@@ -1,14 +1,13 @@
-# QA scan: for every division marker across the whole book, checks whether its label's own
-# rendered bounding box lands on top of real ayah-text ink (using the label-free page screenshots
-# in tools/_tmp_pages/*.png as ground truth) - flags any that overlap significantly so they can be
-# reviewed, instead of relying on spot-checking individual pages by eye.
+# QA scan: for every division tag across the whole book, checks whether the tag as actually
+# rendered lands on top of ayah-text ink (using the label-free page screenshots in
+# data/_page_shots/*.png as ground truth), and flags any that cover noticeable ink.
 #
-# Requires tools/_tmp_shot_pages.js to have been run against the CURRENT output/ (labels hidden).
+# Requires tools/screenshot_pages.js to have been run against the CURRENT output/.
 #
 # Usage: run from the Mushaf_Overlay_App root: python tools/scan_division_overlaps.py
 
-import json
 import os
+import re
 import sys
 
 import numpy as np
@@ -17,80 +16,32 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import compose_page as cp
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-APP_ROOT = os.path.dirname(HERE)
-DATA_DIR = os.path.join(APP_ROOT, 'data')
-SHOTS_DIR = os.path.join(HERE, '_tmp_pages')
+SHOTS_DIR = os.path.join(cp.DATA_DIR, '_page_shots')
+DARK_PIXEL = 40             # a grayscale pixel below this is "ink"
+OVERLAP_RATIO_FLAG = 0.03   # flag if more than 3% of the tag's footprint sits on ink
 
-DARK_PIXEL = 40  # a grayscale pixel below this is "ink"
-OVERLAP_RATIO_FLAG = 0.03  # flag if more than 3% of the label's own footprint sits on ink
-
-DIVISION_PRIORITY = cp.DIVISION_PRIORITY
+TAG_RE = re.compile(r'class="division-label" style="left:([\d.]+)px; top:([\d.-]+)px;"><img src="([^"]+)"')
 
 
 def main():
-    with open(os.path.join(DATA_DIR, 'division_markers.json'), encoding='utf-8') as f:
-        division_markers = json.load(f)
-    with open(os.path.join(DATA_DIR, 'division_label_offsets.json'), encoding='utf-8') as f:
-        offsets = json.load(f)
-    with open(os.path.join(DATA_DIR, 'labels_slate', 'manifest.json'), encoding='utf-8') as f:
-        slate_manifest = json.load(f)
-
-    png_size_cache = {}
-
-    def label_wh(text):
-        if text not in png_size_cache:
-            path = os.path.join(DATA_DIR, 'labels_slate', slate_manifest[text])
-            with Image.open(path) as im:
-                w, h = im.size
-            png_size_cache[text] = (w * 46 / h, 46)
-        return png_size_cache[text]
-
+    data = cp.MushafData()
+    src_to_path = {data.slate_src(t): data.slate_path(t) for t in data.slate_manifest}
     flagged = []
-    for page_str, entries in sorted(division_markers.items(), key=lambda kv: int(kv[0])):
-        shot_path = os.path.join(SHOTS_DIR, f'{int(page_str):03d}.png')
-        if not os.path.exists(shot_path):
-            continue
-        img = np.array(Image.open(shot_path).convert('L'))
-
-        # Same all-kinds-enabled dedup compose_page.py itself applies.
-        by_position = {}
-        for e in entries:
-            pos = (e['surah'], e['ayah'])
-            best = by_position.get(pos)
-            if best is None or DIVISION_PRIORITY[e['kind']] > DIVISION_PRIORITY[best['kind']]:
-                by_position[pos] = e
-
-        text_svg = cp._read_text_svg(int(page_str))
-        vb_min_x, vb_min_y = cp._viewbox_origin(text_svg)
-
-        for e in by_position.values():
-            key = f"{e['surah']}:{e['ayah']}"
-            info = offsets.get(key)
-            anchor_y = info['anchor_y'] if info else e['y']
-            offset = info['offset'] if info else -75.0
-            cx = e['x'] - vb_min_x
-            cy = anchor_y - vb_min_y
-            anchor_left, anchor_top = cp._content_px(cx, cy)
-            label_top = anchor_top + offset
-            w, h = label_wh(e['label'])
-            x0 = int(anchor_left - w / 2)
-            x1 = int(anchor_left + w / 2)
-            y0 = int(label_top)
-            y1 = int(label_top + h)
-            x0c, x1c = max(0, x0), min(img.shape[1], x1)
-            y0c, y1c = max(0, y0), min(img.shape[0], y1)
-            if x1c <= x0c or y1c <= y0c:
-                flagged.append((page_str, key, e['label'], 'off-page', 0.0))
-                continue
-            region = img[y0c:y1c, x0c:x1c]
-            ink_ratio = (region < DARK_PIXEL).mean()
+    pages = sorted(int(p) for p in data.division_markers)
+    for page in pages:
+        img = np.array(Image.open(os.path.join(SHOTS_DIR, f'{page:03d}.png')).convert('L'))
+        html = cp.build_page_html(data, page, enabled_divisions=frozenset(cp.DIVISION_PRIORITY))
+        for left, top, src in TAG_RE.findall(html):
+            left, top = float(left), float(top)
+            half_w = cp._display_width(src_to_path[src], cp.DIVISION_LABEL_H) / 2
+            region = img[int(top):int(top + cp.DIVISION_LABEL_H), int(left - half_w):int(left + half_w)]
+            ink_ratio = float((region < DARK_PIXEL).mean())
             if ink_ratio > OVERLAP_RATIO_FLAG:
-                flagged.append((page_str, key, e['label'], 'overlap', round(float(ink_ratio), 3)))
+                flagged.append((page, round(left), round(top), round(ink_ratio, 3)))
 
-    print(f'checked {sum(1 for _ in division_markers)} pages, {len(flagged)} flagged markers')
+    print(f'checked {len(pages)} pages, {len(flagged)} tags cover noticeable ink (page, x, y, ink ratio)')
     for row in flagged:
-        print(row)
+        print('  ', row)
 
 
 if __name__ == '__main__':

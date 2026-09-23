@@ -1,6 +1,6 @@
 # Mushaf Overlay App - native desktop GUI.
-# Generates the real Madinah mushaf (604 pages) with the user's chosen combination of markers
-# overlaid, as HTML pages only or as HTML + a merged PDF.
+# Generates the real Madinah mushaf (604 pages) with the user's chosen combination of theme colours
+# and markers overlaid, as HTML pages only or as HTML + a merged PDF.
 
 import os
 import threading
@@ -14,20 +14,19 @@ class App:
     def __init__(self, root):
         self.root = root
         root.title("Mushaf Overlay")
-        root.geometry("480x480")
+        root.geometry("480x470")
         root.resizable(False, False)
 
         frame = ttk.Frame(root, padding=20)
         frame.pack(fill='both', expand=True)
 
         row = 0
-        ttk.Label(frame, text="Mushaf theme:").grid(row=row, column=0, sticky='w', pady=(0, 10))
-        self.theme_var = tk.StringVar(value="standard1 (green)")
-        theme_combo = ttk.Combobox(
-            frame, textvariable=self.theme_var, state='readonly',
-            values=["standard1 (green)"],
-        )
-        theme_combo.grid(row=row, column=1, sticky='ew', pady=(0, 10))
+        self.themes_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(frame, text="Theme colours (each ayah tinted by its theme)",
+                        variable=self.themes_var).grid(row=row, column=0, columnspan=2, sticky='w', pady=(0, 4))
+        row += 1
+
+        ttk.Separator(frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=(4, 10))
         row += 1
 
         ttk.Label(frame, text="Recitation markers (any combination):").grid(
@@ -110,16 +109,19 @@ class App:
         return frozenset(divisions)
 
     def on_generate(self):
+        show_themes = self.themes_var.get()
         show_ramadan = self.ramadan_var.get()
         show_standard_ruku = self.standard_ruku_var.get()
         divisions = self._enabled_divisions()
         want_pdf = self.output_var.get() == "HTML + PDF"
 
-        if not show_ramadan and not show_standard_ruku and not divisions:
-            messagebox.showwarning("Nothing selected", "Choose at least one marker to include.")
+        if not show_themes and not show_ramadan and not show_standard_ruku and not divisions:
+            messagebox.showwarning("Nothing selected", "Choose theme colours or at least one marker to include.")
             return
 
         name_parts = []
+        if show_themes:
+            name_parts.append('themes')
         if show_ramadan:
             name_parts.append('ramadan')
         if show_standard_ruku:
@@ -151,11 +153,11 @@ class App:
                 if want_pdf:
                     html_dir = os.path.join(os.path.dirname(os.path.abspath(out_path)), '_build_html')
                     generate_html_pages(html_dir, show_ramadan, show_standard_ruku, divisions,
-                                       progress_callback=on_progress)
+                                       progress_callback=on_progress, show_themes=show_themes)
                     render_pdf_from_html(html_dir, out_path, progress_callback=on_progress)
                 else:
                     generate_html_pages(out_path, show_ramadan, show_standard_ruku, divisions,
-                                       progress_callback=on_progress)
+                                       progress_callback=on_progress, show_themes=show_themes)
                 self.root.after(0, self._on_done, out_path, None)
             except Exception as e:
                 self.root.after(0, self._on_done, out_path, e)
