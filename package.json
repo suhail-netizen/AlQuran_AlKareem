@@ -1,0 +1,13 @@
+{
+  "name": "mushaf-overlay-app",
+  "version": "1.4.0",
+  "private": true,
+  "description": "Node tools for the Mushaf Overlay App: PDF printing (print_pages.js) and the data-building scripts in tools/",
+  "scripts": {
+    "setup": "npm install && puppeteer browsers install chrome"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1",
+    "puppeteer": "^25.11.0"
+  }
+}

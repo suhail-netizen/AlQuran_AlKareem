@@ -10,7 +10,7 @@
 //
 // Usage: run from the Mushaf_Overlay_App root: node tools/build_ayah_positions.js
 
-const puppeteer = require(require('path').join(__dirname, '..', '..', 'Quran_Project', 'node_modules', 'puppeteer'));
+const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');

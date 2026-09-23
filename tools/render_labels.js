@@ -10,7 +10,7 @@
 //          'gold'  (semi-transparent gold box matching the rak'ah marker circle's own color -
 //                   for the تراويح/تهجد tags)
 
-const puppeteer = require(require('path').join(__dirname, '..', '..', 'Quran_Project', 'node_modules', 'puppeteer'));
+const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');

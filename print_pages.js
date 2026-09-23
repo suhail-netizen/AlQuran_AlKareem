@@ -4,8 +4,8 @@
 //
 // Usage: node print_pages.js <html_dir> <output.pdf> <total_pages>
 
-const puppeteer = require(require('path').join(__dirname, '..', 'Quran_Project', 'node_modules', 'puppeteer'));
-const { PDFDocument } = require(require('path').join(__dirname, '..', 'Quran_Project', 'node_modules', 'pdf-lib'));
+const puppeteer = require('puppeteer');
+const { PDFDocument } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
