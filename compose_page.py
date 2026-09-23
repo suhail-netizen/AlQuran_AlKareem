@@ -1,0 +1,339 @@
+# Mushaf Overlay App v2 - page compositor.
+# Builds the HTML for one real mushaf page (1..604): simple frame, a running page-top header
+# (current Surah name + current Juz, plain black text, always shown - same pick-the-page's-own-
+# banner rule as Quran_Project's v1.3), real vector page text (from quran-svg), the page's own
+# built-in surah title framed with a matching border (auto-sized per title, not hardcoded, and
+# excluding the basmala beneath it), page number, and - independently toggleable - Ramadan rak'ah
+# markers, standard ruku markers, and Juz/Hizb/Half-Hizb/Quarter division markers. Designed with an
+# explicit (currently empty) slot for thematic-coloring fills later: layer 3 below is where per-ayah
+# polygon background fills would go, painted before the text so they sit behind it - adding that
+# feature means populating that layer, not restructuring this function.
+
+import base64
+import json
+import os
+import re
+from functools import lru_cache
+from pathlib import Path
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(HERE, 'data')
+
+PAGE_W, PAGE_H = 1816, 2609
+FRAME_LEFT, FRAME_TOP, FRAME_W, FRAME_H, FRAME_BORDER = 60, 60, 1696, 2489, 14
+TEXT_LEFT, TEXT_TOP, TEXT_W, TEXT_H = 110, 170, 1596, 2329
+SRC_W, SRC_H = 345, 550
+
+# The page's own SVG (viewBox 345x550) does NOT stretch independently to fill the TEXT_W x TEXT_H
+# box - its aspect ratio (345:550 = 0.627) doesn't match the box's (1596:2329 = 0.685), so the
+# browser's default preserveAspectRatio="xMidYMid meet" scales it UNIFORMLY (by whichever of
+# SX,SY is smaller) and centers it, leaving a margin on the constrained axis. Every per-ayah x,y
+# coordinate must go through this same uniform SCALE + MARGIN, not independent SX/SY - using SX
+# for x-positions (as earlier code did) put every marker off by the ignored horizontal margin,
+# which is exactly why marker centering never generalized across pages no matter what offset
+# constant was tried. Confirmed empirically: SCALE below is the true rendering scale (measured
+# ornament positions matched it to within a fraction of a pixel).
+SX, SY = TEXT_W / SRC_W, TEXT_H / SRC_H
+SCALE = min(SX, SY)
+MARGIN_X = (TEXT_W - SRC_W * SCALE) / 2
+MARGIN_Y = (TEXT_H - SRC_H * SCALE) / 2
+
+
+def _content_px(vx, vy):
+    """Convert a point in the page SVG's own 0..345 x 0..550 content space to absolute page
+    pixels, accounting for the uniform-scale-plus-margin letterboxing described above."""
+    return TEXT_LEFT + MARGIN_X + vx * SCALE, TEXT_TOP + MARGIN_Y + vy * SCALE
+
+ROSETTE = ('<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">'
+           '<circle cx="32" cy="32" r="30" fill="#fffbf5" stroke="#b8860b" stroke-width="2.5"/>'
+           '<circle cx="32" cy="32" r="25" fill="none" stroke="#2d5016" stroke-width="1"/>'
+           '<rect x="19" y="19" width="26" height="26" fill="#d4af37" stroke="#2d5016" stroke-width="1"/>'
+           '<rect x="19" y="19" width="26" height="26" fill="#d4af37" stroke="#2d5016" stroke-width="1" '
+           'transform="rotate(45 32 32)"/><circle cx="32" cy="32" r="7" fill="#2d5016"/>'
+           '<circle cx="32" cy="32" r="3" fill="#fffbf5"/></svg>')
+
+SESSION_AR = {'Taraweeh': 'تراويح', 'Tahajjud': 'تهجد'}
+DIVISION_PRIORITY = {'juz': 4, 'hizb': 3, 'nisf': 2, 'rub': 1}
+
+
+def _load_json(name):
+    with open(os.path.join(DATA_DIR, name), encoding='utf-8') as f:
+        return json.load(f)
+
+
+@lru_cache(maxsize=None)
+def _data_uri(path):
+    # Embedding these small label PNGs inline avoids a real bug: the generated HTML lives in a
+    # different folder than data/labels_*/ (a sibling of DATA_DIR), and Chromium-based browsers
+    # sandbox a local file:// page to its own directory tree - a file:// <img> src pointing outside
+    # it (even to a sibling folder) is silently blocked, so page numbers, division labels, and the
+    # running header would never show when the HTML is opened directly (double-clicked) rather than
+    # built into a PDF via Puppeteer (which has full filesystem access and never hit this).
+    with open(path, 'rb') as f:
+        encoded = base64.b64encode(f.read()).decode('ascii')
+    return f'data:image/png;base64,{encoded}'
+
+
+class MushafData:
+    def __init__(self):
+        self.title_boxes = _load_json('title_boxes.json')
+        self.ayah_positions = _load_json('ayah_positions.json')
+        self.rakah_markers = _load_json('rakah_markers.json')
+        self.standard_markers = _load_json('standard_ruku_markers.json')
+        self.page_night = _load_json('page_night_map.json')
+        self.division_markers = _load_json('division_markers.json')
+        with open(os.path.join(DATA_DIR, 'labels_pagenum', 'manifest.json'), encoding='utf-8') as f:
+            self.pagenum_manifest = json.load(f)
+        with open(os.path.join(DATA_DIR, 'labels_boxed', 'manifest.json'), encoding='utf-8') as f:
+            self.boxed_manifest = json.load(f)
+        with open(os.path.join(DATA_DIR, 'labels_gold', 'manifest.json'), encoding='utf-8') as f:
+            self.gold_manifest = json.load(f)
+        with open(os.path.join(DATA_DIR, 'labels_slate', 'manifest.json'), encoding='utf-8') as f:
+            self.slate_manifest = json.load(f)
+        self.page_headers = _load_json('page_headers.json')
+        with open(os.path.join(DATA_DIR, 'labels_header', 'manifest.json'), encoding='utf-8') as f:
+            self.header_manifest = json.load(f)
+        self.division_label_offsets = _load_json('division_label_offsets.json')
+
+    def pagenum_src(self, text):
+        path = os.path.join(DATA_DIR, 'labels_pagenum', self.pagenum_manifest[text])
+        return _data_uri(path)
+
+    def boxed_src(self, text):
+        path = os.path.join(DATA_DIR, 'labels_boxed', self.boxed_manifest[text])
+        return _data_uri(path)
+
+    def gold_src(self, text):
+        path = os.path.join(DATA_DIR, 'labels_gold', self.gold_manifest[text])
+        return _data_uri(path)
+
+    def slate_src(self, text):
+        path = os.path.join(DATA_DIR, 'labels_slate', self.slate_manifest[text])
+        return _data_uri(path)
+
+    def header_src(self, text):
+        path = os.path.join(DATA_DIR, 'labels_header', self.header_manifest[text])
+        return _data_uri(path)
+
+
+AR_DIGITS = '٠١٢٣٤٥٦٧٨٩'
+
+
+def to_arabic_indic(n):
+    return ''.join(AR_DIGITS[int(d)] for d in str(n))
+
+
+def night_label_text(v):
+    if isinstance(v, list):
+        return ' - '.join(f'الليلة {n}' for n in v)
+    return f'الليلة {v}'
+
+
+def _polygon_bbox(polygon):
+    nums = [float(x) for x in re.findall(r'-?[\d.]+', polygon)]
+    xs, ys = nums[0::2], nums[1::2]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _read_text_svg(page_num):
+    with open(os.path.join(DATA_DIR, 'svg', f'{page_num:03d}.svg'), encoding='utf-8') as f:
+        return f.read()
+
+
+def _viewbox_origin(text_svg):
+    # Nearly every page's SVG viewBox is "0 0 345 550", but the two ornate opening-spread pages
+    # (1 and 2) use an offset origin. Ayah x,y anchors are given in that same coordinate space, so
+    # marker placement must subtract the viewBox's own origin before scaling to pixels.
+    m = re.search(r'<svg[^>]*viewBox="([^"]+)"', text_svg)
+    min_x, min_y, _w, _h = (float(v) for v in m.group(1).split())
+    return min_x, min_y
+
+
+def build_page_html(data: MushafData, page_num: int, show_ramadan: bool = False,
+                     show_standard_ruku: bool = False, enabled_divisions: frozenset[str] = frozenset()) -> str:
+    """show_ramadan and show_standard_ruku are independent toggles (both can be on at once), just
+    like enabled_divisions - subset of {'juz', 'hizb', 'nisf', 'rub'}, any combination. When more
+    than one enabled division kind coincides on the same ayah, only the highest-priority one is
+    shown (Juz > Hizb > Half-Hizb > Quarter), matching the proven hierarchy from the v1.2
+    continuous-mushaf generator."""
+    text_svg = _read_text_svg(page_num)
+    vb_min_x, vb_min_y = _viewbox_origin(text_svg)
+
+    # --- layer: surah title box(es), auto-sized to the page's own built-in calligraphy ---
+    title_html = ''
+    for entry in data.title_boxes.get(str(page_num), []):
+        if entry.get('error'):
+            continue
+        pad_y = 20
+        side_margin = 26
+        box_top = TEXT_TOP + MARGIN_Y + entry['y0'] * SCALE - pad_y
+        box_h = (entry['y1'] - entry['y0']) * SCALE + pad_y * 2
+        box_left = FRAME_LEFT + FRAME_BORDER + side_margin
+        box_w = FRAME_W - 2 * FRAME_BORDER - 2 * side_margin
+        title_html += (
+            f'<div class="title-box" style="left:{box_left}px; top:{box_top}px; '
+            f'width:{box_w}px; height:{box_h}px;"></div>'
+        )
+
+    # --- layer: thematic-coloring fills (reserved slot, empty until that feature is built) ---
+    theme_fill_html = ''  # populate here later: one absolutely-positioned filled polygon per ayah
+
+    # --- layer: markers (mode-dependent) ---
+    # Both Ramadan rak'ah and standard ruku markers use the same small, light, filled circle sat
+    # right behind the ayah's own end ornament (so its ink shows through on top), drawn inside
+    # .text before the SVG so it paints beneath it. The circle is centered on data.ayah_positions'
+    # precise per-ayah ornament center (read straight off the SVG's own rendering via
+    # getBoundingClientRect - see tools/build_ayah_positions.js) rather than a guessed offset from
+    # the marker JSON's own x,y field: an earlier fixed-offset approach looked right on the one
+    # ayah it was calibrated against but was badly off on others, since that offset isn't constant.
+    FILL_R = 13
+
+    def _fill_circle_html(e):
+        # Nested inside .text, so positions are LOCAL to it (no TEXT_LEFT/TEXT_TOP) - but the same
+        # MARGIN_X/MARGIN_Y letterbox offset still applies, since it's internal to that box too.
+        # ayah_positions.json stores raw (un-normalized) viewBox coordinates, so vb_min_x/vb_min_y
+        # (nonzero only for the two ornate opening-spread pages) must be subtracted here too.
+        pos = data.ayah_positions[f"{e['surah']}:{e['ayah']}"]
+        cx = pos['cx'] - vb_min_x
+        cy = pos['cy'] - vb_min_y
+        left = MARGIN_X + (cx - FILL_R) * SCALE
+        top = MARGIN_Y + (cy - FILL_R) * SCALE
+        w = h = FILL_R * 2 * SCALE
+        return f'<div class="marker-fill" style="left:{left}px; top:{top}px; width:{w}px; height:{h}px;"></div>'
+
+    def _label_above_html(e, label_text):
+        # Centered above the filled circle (not beside it), so it never crowds the adjacent word -
+        # same idea as the division-marker labels.
+        pos = data.ayah_positions[f"{e['surah']}:{e['ayah']}"]
+        cx = pos['cx'] - vb_min_x
+        cy = pos['cy'] - vb_min_y
+        anchor_left, _ = _content_px(cx, 0)
+        circle_top = TEXT_TOP + MARGIN_Y + (cy - FILL_R) * SCALE
+        label_src = data.gold_src(label_text)
+        return (
+            f'<div class="marker-label" style="left:{anchor_left}px; top:{circle_top - 50}px;">'
+            f'<img src="{label_src}"></div>'
+        )
+
+    standard_fill_html = ''
+    if show_standard_ruku:
+        for e in data.standard_markers.get(str(page_num), []):
+            standard_fill_html += _fill_circle_html(e)
+
+    rakah_fill_html = ''
+    marker_html = ''
+    if show_ramadan:
+        for e in data.rakah_markers.get(str(page_num), []):
+            rakah_fill_html += _fill_circle_html(e)
+            marker_html += _label_above_html(e, f"{SESSION_AR[e['session']]} {e['rakah']}")
+
+    # --- layer: Juz/Hizb/Half-Hizb/Quarter division labels (independent toggles) ---
+    division_html = ''
+    if enabled_divisions:
+        by_position = {}
+        for e in data.division_markers.get(str(page_num), []):
+            if e['kind'] not in enabled_divisions:
+                continue
+            pos = (e['surah'], e['ayah'])
+            best = by_position.get(pos)
+            if best is None or DIVISION_PRIORITY[e['kind']] > DIVISION_PRIORITY[best['kind']]:
+                by_position[pos] = e
+
+        for e in by_position.values():
+            # e['x'] is the precise polygon start corner (where the ayah's own real rub-el-hizb
+            # glyph sits) - no ANCHOR_DX left-edge correction needed here, unlike the ruku ring
+            # which anchors to the ornament's raw (left-edge) x,y field.
+            #
+            # The vertical offset needed to center the label in the blank gap above that row is
+            # NOT a constant - it was measured per-marker by tools/build_division_label_offsets.py,
+            # which pixel-scans each page for the real blank gap nearest the anchor. A single
+            # hand-picked constant (tried earlier: -72) matched only the one marker it was
+            # calibrated against and was badly wrong elsewhere.
+            key = f"{e['surah']}:{e['ayah']}"
+            info = data.division_label_offsets.get(key)
+            anchor_y = info['anchor_y'] if info else e['y']
+            offset = info['offset'] if info else -75.0
+            cx = e['x'] - vb_min_x
+            cy = anchor_y - vb_min_y
+            anchor_left, anchor_top = _content_px(cx, cy)
+            label_src = data.slate_src(e['label'])
+            division_html += (
+                f'<div class="division-label" style="left:{anchor_left}px; top:{anchor_top + offset}px;">'
+                f'<img src="{label_src}"></div>'
+            )
+
+    # --- layer: night-of-Ramadan header (Ramadan mode only) ---
+    night_html = ''
+    if show_ramadan:
+        night_val = data.page_night.get(str(page_num))
+        if night_val is not None:
+            label_src = data.boxed_src(night_label_text(night_val))
+            night_html = f'<div class="night-label"><img src="{label_src}"></div>'
+
+    # --- layer: running page header (Surah name + current Juz), always shown ---
+    header = data.page_headers[str(page_num)]
+    header_html = (
+        f'<div class="page-header juz"><img src="{data.header_src(header["juz"])}"></div>'
+        f'<div class="page-header surah"><img src="{data.header_src(header["surah"])}"></div>'
+    )
+
+    # --- page number ---
+    pagenum_src = data.pagenum_src(to_arabic_indic(page_num))
+
+    return f'''<!DOCTYPE html><html><head><style>
+  body{{margin:0;}}
+  .page{{position:relative; width:{PAGE_W}px; height:{PAGE_H}px; background:#fff;}}
+  .frame{{position:absolute; left:{FRAME_LEFT}px; top:{FRAME_TOP}px; width:{FRAME_W}px; height:{FRAME_H}px;
+          border:{FRAME_BORDER}px solid #d4af37; border-radius:8px; box-shadow: inset 0 0 0 3px #8b7355; box-sizing:border-box;}}
+  .corner{{position:absolute; width:48px; height:48px;}}
+  .corner.tl{{top:-4px; left:-4px;}} .corner.tr{{top:-4px; right:-4px;}}
+  .corner.bl{{bottom:-4px; left:-4px;}} .corner.br{{bottom:-4px; right:-4px;}}
+  .text{{position:absolute; left:{TEXT_LEFT}px; top:{TEXT_TOP}px; width:{TEXT_W}px; height:{TEXT_H}px;}}
+  .text svg {{ width:100%; height:100%; display:block; }}
+  .title-box {{ position:absolute; border:5px double #b8860b; border-radius:10px;
+                background: linear-gradient(180deg, #fffdf5 0%, #f7ecc8 100%); }}
+  .marker-fill {{ position:absolute; background:#d9a441; border-radius:50%; opacity:0.35; }}
+  .marker-label img {{ height:44px; }}
+  .marker-label {{ position:absolute; transform: translateX(-50%); }}
+  .division-label {{ position:absolute; transform: translateX(-50%); }}
+  .division-label img {{ height:46px; }}
+  .night-label {{ position:absolute; left:0; right:0; top:118px; text-align:center; }}
+  .night-label img {{ height:48px; }}
+  .page-header {{ position:absolute; top:118px; }}
+  .page-header img {{ height:48px; }}
+  .page-header.juz {{ left:130px; }}
+  .page-header.surah {{ right:130px; }}
+  .pagenum {{ position:absolute; left:0; right:0; bottom:10px; text-align:center; }}
+  .pagenum img {{ height:38px; }}
+</style></head><body>
+<div class="page">
+  <div class="frame">
+    <div class="corner tl">{ROSETTE}</div><div class="corner tr">{ROSETTE}</div>
+    <div class="corner bl">{ROSETTE}</div><div class="corner br">{ROSETTE}</div>
+  </div>
+  {header_html}
+  {title_html}
+  <div class="text">{theme_fill_html}{standard_fill_html}{rakah_fill_html}{text_svg}</div>
+  {marker_html}
+  {division_html}
+  {night_html}
+  <div class="pagenum"><img src="{pagenum_src}"></div>
+</div>
+<script>
+// Shrink the page to fit the browser window when viewing the HTML directly (a laptop screen is
+// far smaller than the page's native {PAGE_W}x{PAGE_H}px). Never enlarges past 1:1, and is a
+// no-op whenever the viewport is already at least this size - which is exactly the case during
+// PDF generation (print_pages.js sets its own viewport to the full page size first), so the
+// printed PDF's layout and dimensions are completely unaffected by this.
+(function() {{
+  var pageEl = document.querySelector('.page');
+  var scale = Math.min(1, window.innerWidth / {PAGE_W}, window.innerHeight / {PAGE_H});
+  if (scale < 1) {{
+    pageEl.style.transform = 'scale(' + scale + ')';
+    pageEl.style.transformOrigin = 'top left';
+    document.body.style.width = ({PAGE_W} * scale) + 'px';
+    document.body.style.height = ({PAGE_H} * scale) + 'px';
+  }}
+}})();
+</script>
+</body></html>'''
