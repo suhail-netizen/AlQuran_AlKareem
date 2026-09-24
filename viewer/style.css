@@ -448,6 +448,18 @@ button { font: inherit; color: inherit; }
 .switch-row input:checked + .switch::after { right: 21px; }
 .switch-row input:focus-visible + .switch { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+.credits {
+  font-size: 0.8rem;
+  line-height: 1.7;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  margin-bottom: 16px;
+}
+.credits b { color: var(--ink); display: block; margin-bottom: 2px; }
+.credits p { margin-bottom: 4px; }
+.credits a { color: var(--accent); }
+
 .help-link {
   display: block;
   margin: 6px 0 8px;

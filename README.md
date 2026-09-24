@@ -27,7 +27,7 @@ python viewer/build_pages.py   # generates viewer/Pages (604 pages) and refreshe
 python viewer/serve.py         # opens http://127.0.0.1:8000/index.html
 ```
 
-The page files are generated, so they are not stored in git. To publish the reader, upload the `viewer/` folder, including `Pages/`, to any HTTPS static host. `sw.js` and `manifest.webmanifest` make it installable and readable offline. If you add or rename app files, list them in `SHELL_FILES` in `sw.js` and bump `SHELL_VERSION`.
+The page files are generated, so they are not stored in git. Every push to `main` publishes the reader to GitHub Pages: `.github/workflows/publish-reader.yml` generates the pages and deploys `viewer/`. The one-time setup is Settings → Pages → Source: GitHub Actions. To host it elsewhere, upload the `viewer/` folder, including `Pages/`, to any HTTPS static host. `sw.js` and `manifest.webmanifest` make it installable and readable offline. If you add or rename app files, list them in `SHELL_FILES` in `sw.js` and bump `SHELL_VERSION`.
 
 ## Source data (`source_data/`)
 
