@@ -1,0 +1,45 @@
+{
+ "title": "Theme tints: six standard colours (day and night) and the mapping from the book colour names",
+ "how_it_works": "Every theme gets one of the six tints so that neighbouring themes are always told apart. The book colour only gives a starting preference (mapping below; null = no preference). Where a theme would repeat the colour of the theme before it, it takes another tint (theme_tints.py).",
+ "day": {
+  "Rose": "#fde9e9",
+  "Sand": "#f6ece1",
+  "Sage": "#e7f1e5",
+  "Aqua": "#def2f2",
+  "Periwinkle": "#e5effb",
+  "Lilac": "#f5ebf6"
+ },
+ "night": {
+  "Rose": "#513a3a",
+  "Sand": "#493e2f",
+  "Sage": "#374335",
+  "Aqua": "#294545",
+  "Periwinkle": "#324150",
+  "Lilac": "#483c4b"
+ },
+ "mapping": {
+  "Yellow": "Sand",
+  "Yellow/Orange": "Sand",
+  "White/Cream": "Sand",
+  "Orange": "Aqua",
+  "Orange/Yellow": "Aqua",
+  "Orange/Peach": "Aqua",
+  "Orange/Red": "Aqua",
+  "Orange/Pink": "Aqua",
+  "Red/Dark Pink": "Rose",
+  "Pink": "Rose",
+  "Pink/Red": "Rose",
+  "Pink/Rose": "Rose",
+  "Pink/Purple": "Rose",
+  "Purple": "Lilac",
+  "Purple/Pink": "Lilac",
+  "Blue": "Periwinkle",
+  "Light Blue": "Periwinkle",
+  "White/Blue": "Periwinkle",
+  "Green": "Sage",
+  "White/Green": "Sage",
+  "White": null,
+  "Gray": null,
+  "Brown": null
+ }
+}

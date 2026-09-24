@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1a3636">
+  <title>المصحف الشريف</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="المصحف">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- App Header Toolbar -->
+  <header class="app-bar">
+    <button id="menu-btn" class="icon-btn labeled" title="الفهرس والسور والمحفوظات (M)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <span>الفهرس</span>
+    </button>
+    <div class="page-info" id="page-info">
+      <span id="surah-title">سورة الفاتحة</span>
+      <span class="sep">|</span>
+      <span id="juz-title">الجزء ١</span>
+      <span class="sep">|</span>
+      <span id="page-num">صفحة ١</span>
+    </div>
+    <button id="bookmark-btn" class="icon-btn labeled" title="حفظ هذه الصفحة في المحفوظات (B)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>
+      <span id="bookmark-label">حفظ الصفحة</span>
+    </button>
+  </header>
+
+  <!-- Main Quran Swiper Slider Container -->
+  <main class="swiper-container swiper" id="reader">
+    <div class="swiper-wrapper" id="swiper-wrapper">
+      <!-- Slides are injected dynamically via JS -->
+    </div>
+  </main>
+
+  <!-- Page navigation strip -->
+  <footer class="nav-strip">
+    <button id="prev-btn" class="nav-btn" title="الصفحة السابقة (→)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      <span>السابقة</span>
+    </button>
+    <input id="page-slider" type="range" min="1" max="604" value="1" dir="rtl" aria-label="اسحب للانتقال إلى صفحة" title="اسحب للانتقال إلى صفحة">
+    <button id="next-btn" class="nav-btn" title="الصفحة التالية (←)">
+      <span>التالية</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+    </button>
+  </footer>
+
+  <!-- Side Menu Drawer: index, juz, bookmarks -->
+  <div id="scrim" class="scrim"></div>
+  <aside id="drawer" class="drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <form id="goto-form" class="goto">
+        <input id="goto-input" type="number" min="1" max="604" inputmode="numeric" placeholder="رقم الصفحة">
+        <button type="submit">انتقال</button>
+      </form>
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="surahs" role="tab">السور</button>
+        <button class="tab" data-tab="juz" role="tab">الأجزاء</button>
+        <button class="tab" data-tab="bookmarks" role="tab">المحفوظات</button>
+      </div>
+      <label class="switch-row">
+        <span>علامات ختم القرآن في القيام <small>(الليلة، تراويح، تهجد)</small></span>
+        <input id="khatm-toggle" type="checkbox" role="switch" checked>
+        <span class="switch" aria-hidden="true"></span>
+      </label>
+      <label class="switch-row">
+        <span>التلوين الموضوعي <small>(ألوان موضوعات الآيات)</small></span>
+        <input id="theme-toggle" type="checkbox" role="switch" checked>
+        <span class="switch" aria-hidden="true"></span>
+      </label>
+      <button id="help-open" class="help-link" type="button">طريقة الاستخدام</button>
+    </div>
+    <div class="drawer-body">
+      <section id="tab-surahs" class="tab-panel active">
+        <input id="surah-search" class="search" type="search" placeholder="ابحث عن سورة…">
+        <ul id="surah-list" class="list"></ul>
+      </section>
+      <section id="tab-juz" class="tab-panel">
+        <div id="juz-grid" class="juz-grid"></div>
+      </section>
+      <section id="tab-bookmarks" class="tab-panel">
+        <ul id="bookmark-list" class="list"></ul>
+        <p id="bookmark-empty" class="empty">لا توجد محفوظات بعد. اضغط على زر الحفظ أعلى الصفحة، أو على آية ثم «حفظ الآية».</p>
+      </section>
+    </div>
+    <div id="offline-box" class="offline-box" hidden>
+      <div class="offline-row">
+        <div>
+          <strong>القراءة دون اتصال</strong>
+          <div id="offline-status" class="sub"></div>
+        </div>
+        <button id="install-btn" class="ghost" hidden>تثبيت التطبيق</button>
+      </div>
+      <progress id="offline-progress" max="604" value="0"></progress>
+      <div class="offline-actions">
+        <button id="offline-download">تنزيل المصحف كاملًا</button>
+        <button id="offline-remove" class="ghost">حذف النسخة المحفوظة</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Ayah details sheet -->
+  <div id="ayah-sheet" class="sheet" aria-hidden="true">
+    <div class="sheet-head">
+      <strong id="ayah-ref"></strong>
+      <button id="sheet-close" class="icon-btn small" aria-label="إغلاق">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <p id="ayah-text" class="ayah-text"></p>
+    <p id="ayah-theme" class="ayah-theme"></p>
+    <div class="sheet-actions">
+      <button id="ayah-copy">نسخ الآية</button>
+      <button id="ayah-bookmark">حفظ الآية</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <!-- First-launch guide -->
+  <div id="help" class="help" hidden>
+    <div class="help-card">
+      <h2>طريقة الاستخدام</h2>
+      <ul>
+        <li><b>تقليب الصفحات:</b> اسحب الصفحة يمينًا أو يسارًا، أو استخدم زرَّي «التالية» و«السابقة» في الأسفل.</li>
+        <li><b>الفهرس:</b> زر «الفهرس» أعلى الشاشة يفتح قائمة السور والأجزاء والمحفوظات، ومنه تنتقل إلى أي صفحة.</li>
+        <li><b>حفظ الصفحة:</b> زر «حفظ الصفحة» يضعها في المحفوظات لتعود إليها لاحقًا.</li>
+        <li><b>الآية:</b> اضغط على أي آية لتظهر لك نصّها وموضوعها، مع زرَّي النسخ والحفظ.</li>
+        <li><b>علامات ختم القرآن في القيام:</b> «الليلة» و«تراويح» و«تهجد» يمكن إظهارها أو إخفاؤها من مفتاح في «الفهرس».</li>
+        <li><b>التلوين الموضوعي:</b> ألوان الخلفية تميّز موضوعات الآيات، ويمكن إطفاؤها من مفتاح في «الفهرس» لقراءة صفحة بيضاء.</li>
+        <li><b>متابعة القراءة:</b> يفتح التطبيق دائمًا على آخر صفحة قرأتها.</li>
+      </ul>
+      <button id="help-close">ابدأ القراءة</button>
+    </div>
+  </div>
+
+  <!-- Swiper.js + generated data (build_app_data.py) -->
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <script src="data/app_index.js"></script>
+  <script src="data/quran_text.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>

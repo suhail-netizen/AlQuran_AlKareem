@@ -1,7 +1,7 @@
 # Precomputes each ayah's theme tint (day palette) into data/theme_tints.json ("surah:ayah" -> hex),
-# using Quran_Project's own tint assignment (theme_tints.py): every theme from quran_complete.json
-# gets one of six soft tints so neighbouring themes are always told apart. Done at build time so the
-# app itself doesn't depend on Quran_Project when generating pages.
+# using the tint assignment in source_data/theme_tints.py: every theme from quran_complete.json
+# gets one of six soft tints so neighbouring themes are always told apart. Done at build time so
+# generating pages only needs data/.
 #
 # Usage: run from the Mushaf_Overlay_App root: python tools/build_theme_tints.py
 
@@ -11,16 +11,16 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 APP_ROOT = os.path.dirname(HERE)
-QURAN_PROJECT = os.path.join(APP_ROOT, '..', 'Quran_Project')
+SOURCE_DATA = os.path.join(APP_ROOT, 'source_data')
 
-sys.path.insert(0, QURAN_PROJECT)
+sys.path.insert(0, SOURCE_DATA)
 from theme_tints import compute_tints, load_colours  # noqa: E402
 
 
 def main():
-    with open(os.path.join(QURAN_PROJECT, 'quran_complete.json'), encoding='utf-8') as f:
+    with open(os.path.join(SOURCE_DATA, 'quran_complete.json'), encoding='utf-8') as f:
         themes = json.load(f)
-    with open(os.path.join(QURAN_PROJECT, 'quran-full-tashkeel.json'), encoding='utf-8') as f:
+    with open(os.path.join(SOURCE_DATA, 'quran-full-tashkeel.json'), encoding='utf-8') as f:
         quran = json.load(f)
     colours = load_colours()
     day = colours['day']

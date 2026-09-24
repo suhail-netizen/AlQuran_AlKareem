@@ -15,7 +15,7 @@ const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
 
-const FONT_PATH = path.join(__dirname, '..', '..', 'Quran_Project', 'fonts', 'KFGQPC-Hafs-V30.ttf');
+const FONT_PATH = path.join(__dirname, '..', 'viewer', 'fonts', 'KFGQPC-Hafs-V30.ttf');
 
 async function main() {
     const labelsPath = process.argv[2];

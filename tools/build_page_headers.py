@@ -9,9 +9,9 @@ import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 APP_ROOT = os.path.dirname(HERE)
-QURAN_PROJECT = os.path.join(APP_ROOT, '..', 'Quran_Project')
+SOURCE_DATA = os.path.join(APP_ROOT, 'source_data')
 
-with open(os.path.join(QURAN_PROJECT, 'quran_divisions_map.json'), encoding='utf-8') as f:
+with open(os.path.join(SOURCE_DATA, 'quran_divisions_map.json'), encoding='utf-8') as f:
     divisions = json.load(f)
 
 with open(os.path.join(APP_ROOT, 'data', 'page_map.json'), encoding='utf-8') as f:
