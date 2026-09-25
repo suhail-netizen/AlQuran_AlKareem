@@ -186,15 +186,19 @@ function setupLayerSwitch(inputId, storageKey, cssVar, name) {
   });
 }
 
-// The ruku/khatm radio group: at most one of "standard" or "ramadan" is shown at a time (or
-// neither, for "none"). Every page already carries both marker layers (see build_pages.py); this
-// only switches which one is visible, through the same CSS-variable-on-<body> mechanism as
-// setupLayerSwitch, so it also reaches every page's shadow root (see PAGE_EXTRA_CSS).
-const KHATM_LABEL = { none: 'لا شيء', standard: 'علامات الركوع', ramadan: 'ختمة رمضان' };
+// The ruku/khatm radio group: at most one of "standard" / "pagetheme" / "ramadan" is shown at a
+// time (or neither, for "none"). Every page already carries all three marker layers (see
+// build_pages.py); this only switches which one is visible, through the same
+// CSS-variable-on-<body> mechanism as setupLayerSwitch, so it also reaches every page's shadow root
+// (see PAGE_EXTRA_CSS).
+const KHATM_LABEL = {
+  none: 'لا شيء', standard: 'علامات الركوع', pagetheme: 'علامات نهاية الصفحة', ramadan: 'ختمة رمضان',
+};
 function setupKhatmRadio() {
   const radios = [...document.querySelectorAll('input[name="khatm-mode"]')];
   const apply = (mode) => {
     document.body.style.setProperty('--standard-display', mode === 'standard' ? 'block' : 'none');
+    document.body.style.setProperty('--pagetheme-display', mode === 'pagetheme' ? 'block' : 'none');
     document.body.style.setProperty('--ramadan-display', mode === 'ramadan' ? 'block' : 'none');
   };
   let mode = 'none';
@@ -287,10 +291,11 @@ const PAGE_EXTRA_CSS = `
   .text * { pointer-events: none; }            /* glyphs sit above the ayah outlines: let taps through */
   .text .ayahPolygon { pointer-events: all; cursor: pointer; transition: fill-opacity .15s; }
   .ayahPolygon:hover { fill: #d4af37; fill-opacity: .12; }
-  /* Ruku/khatm marker layers: every page carries both, the radio group sets --standard-display /
-     --ramadan-display on <body> so at most one shows. Ramadan also draws the تراويح/تهجد label
-     above its circle and the الليلة banner at the page top. */
+  /* Ruku/khatm marker layers: every page carries all three, the radio group sets
+     --standard-display / --pagetheme-display / --ramadan-display on <body> so at most one shows.
+     Ramadan also draws the تراويح/تهجد label above its circle and the الليلة banner at the page top. */
   .marker-fill-standard { display: var(--standard-display, none); }
+  .marker-fill-pagetheme { display: var(--pagetheme-display, none); }
   .marker-fill-ramadan, .marker-label, .night-label { display: var(--ramadan-display, none); }
   /* Thematic colouring: the tinted layer under the text; --theme-display from its menu switch. */
   .text svg.theme-layer { display: var(--theme-display, block); }

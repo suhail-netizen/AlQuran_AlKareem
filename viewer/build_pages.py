@@ -6,11 +6,12 @@ then refreshes the reader's data files (build_app_data.py). Run from anywhere:
 
     python viewer/build_pages.py
 
-The pages carry every layer the reader can switch on and off: theme colours; both ruku schemes -
-standard ruku circles (marker-fill-standard) and the Ramadan khatm markers (night labels, تراويح/تهجد
+The pages carry every layer the reader can switch on and off: theme colours; all three ruku schemes -
+standard ruku circles (marker-fill-standard), the page/theme candidate scheme (marker-fill-pagetheme,
+see tools/build_page_theme_ruku_markers.py), and the Ramadan khatm markers (night labels, تراويح/تهجد
 labels, marker-fill-ramadan circles) - plus the juz / hizb / half-hizb / quarter labels. The reader
-shows at most one ruku scheme at a time via CSS, switching the two layers' classes independently.
-These options reproduce the published pages exactly. The pages are generated, so they are not in git.
+shows at most one ruku scheme at a time via CSS, switching each layer's class independently.
+The pages are generated, so they are not in git.
 """
 
 import os
@@ -28,6 +29,7 @@ PAGES_DIR = os.path.join(VIEWER, 'Pages')
 OPTIONS = dict(
     show_ramadan=True,
     show_standard_ruku=True,
+    show_page_theme_ruku=True,
     enabled_divisions=frozenset({'juz', 'hizb', 'nisf', 'rub'}),
     show_themes=True,
 )

@@ -111,6 +111,7 @@ class MushafData:
         self.ayah_positions = _load_json('ayah_positions.json')
         self.rakah_markers = _load_json('rakah_markers.json')
         self.standard_markers = _load_json('standard_ruku_markers.json')
+        self.page_theme_markers = _load_json('page_theme_ruku_markers.json')
         self.page_night = _load_json('page_night_map.json')
         self.division_markers = _load_json('division_markers.json')
         with open(os.path.join(DATA_DIR, 'labels_pagenum', 'manifest.json'), encoding='utf-8') as f:
@@ -192,13 +193,17 @@ def _viewbox_origin(text_svg):
 
 
 def build_page_html(data: MushafData, page_num: int, show_ramadan: bool = False,
-                     show_standard_ruku: bool = False, enabled_divisions: frozenset[str] = frozenset(),
-                     show_themes: bool = False) -> str:
-    """show_ramadan and show_standard_ruku are independent toggles (both can be on at once), just
-    like enabled_divisions - subset of {'juz', 'hizb', 'nisf', 'rub'}, any combination. When more
-    than one enabled division kind coincides on the same ayah, only the highest-priority one is
-    shown (Juz > Hizb > Half-Hizb > Quarter), matching the proven hierarchy from the v1.2
-    continuous-mushaf generator."""
+                     show_standard_ruku: bool = False, show_page_theme_ruku: bool = False,
+                     enabled_divisions: frozenset[str] = frozenset(), show_themes: bool = False) -> str:
+    """show_ramadan, show_standard_ruku and show_page_theme_ruku are independent toggles (any
+    combination can be on at once), just like enabled_divisions - subset of {'juz', 'hizb', 'nisf',
+    'rub'}, any combination. When more than one enabled division kind coincides on the same ayah,
+    only the highest-priority one is shown (Juz > Hizb > Half-Hizb > Quarter), matching the proven
+    hierarchy from the v1.2 continuous-mushaf generator.
+
+    show_page_theme_ruku draws data/page_theme_ruku_markers.json: a candidate ruku scheme (one
+    marker per real Mushaf page, snapped to the nearest thematic/surah boundary - see
+    tools/build_page_theme_ruku_markers.py), evaluated 2026-09-25 alongside the traditional scheme."""
     text_svg = _read_text_svg(page_num)
     vb_min_x, vb_min_y = _viewbox_origin(text_svg)
 
@@ -277,6 +282,11 @@ def build_page_html(data: MushafData, page_num: int, show_ramadan: bool = False,
     if show_standard_ruku:
         for e in data.standard_markers.get(str(page_num), []):
             standard_fill_html += _fill_circle_html(e, 'marker-fill-standard')
+
+    page_theme_fill_html = ''
+    if show_page_theme_ruku:
+        for e in data.page_theme_markers.get(str(page_num), []):
+            page_theme_fill_html += _fill_circle_html(e, 'marker-fill-pagetheme')
 
     rakah_fill_html = ''
     marker_html = ''
@@ -379,7 +389,7 @@ def build_page_html(data: MushafData, page_num: int, show_ramadan: bool = False,
   </div>
   {header_html}
   {title_html}
-  <div class="text">{theme_fill_html}{standard_fill_html}{rakah_fill_html}{text_svg}</div>
+  <div class="text">{theme_fill_html}{standard_fill_html}{page_theme_fill_html}{rakah_fill_html}{text_svg}</div>
   {marker_html}
   {division_html}
   {night_html}

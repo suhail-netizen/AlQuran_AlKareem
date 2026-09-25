@@ -35,10 +35,14 @@ class App:
 
         self.ramadan_var = tk.BooleanVar(value=False)
         self.standard_ruku_var = tk.BooleanVar(value=False)
+        self.page_theme_ruku_var = tk.BooleanVar(value=False)
         ttk.Checkbutton(frame, text="Ramadan rak'ah markers", variable=self.ramadan_var).grid(
             row=row, column=0, sticky='w', pady=2)
         ttk.Checkbutton(frame, text="Standard ruku (ركوع)", variable=self.standard_ruku_var).grid(
             row=row, column=1, sticky='w', pady=2)
+        row += 1
+        ttk.Checkbutton(frame, text="Page/theme ruku (candidate)", variable=self.page_theme_ruku_var).grid(
+            row=row, column=0, sticky='w', pady=2)
         row += 1
 
         ttk.Separator(frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=(4, 10))
@@ -112,10 +116,11 @@ class App:
         show_themes = self.themes_var.get()
         show_ramadan = self.ramadan_var.get()
         show_standard_ruku = self.standard_ruku_var.get()
+        show_page_theme_ruku = self.page_theme_ruku_var.get()
         divisions = self._enabled_divisions()
         want_pdf = self.output_var.get() == "HTML + PDF"
 
-        if not show_themes and not show_ramadan and not show_standard_ruku and not divisions:
+        if not show_themes and not show_ramadan and not show_standard_ruku and not show_page_theme_ruku and not divisions:
             messagebox.showwarning("Nothing selected", "Choose theme colours or at least one marker to include.")
             return
 
@@ -126,6 +131,8 @@ class App:
             name_parts.append('ramadan')
         if show_standard_ruku:
             name_parts.append('ruku')
+        if show_page_theme_ruku:
+            name_parts.append('pagetheme')
         name_parts.extend(sorted(divisions))
         base_name = 'mushaf_' + '_'.join(name_parts)
 
@@ -152,12 +159,14 @@ class App:
 
                 if want_pdf:
                     html_dir = os.path.join(os.path.dirname(os.path.abspath(out_path)), '_build_html')
-                    generate_html_pages(html_dir, show_ramadan, show_standard_ruku, divisions,
-                                       progress_callback=on_progress, show_themes=show_themes)
+                    generate_html_pages(html_dir, show_ramadan, show_standard_ruku, show_page_theme_ruku,
+                                       enabled_divisions=divisions, progress_callback=on_progress,
+                                       show_themes=show_themes)
                     render_pdf_from_html(html_dir, out_path, progress_callback=on_progress)
                 else:
-                    generate_html_pages(out_path, show_ramadan, show_standard_ruku, divisions,
-                                       progress_callback=on_progress, show_themes=show_themes)
+                    generate_html_pages(out_path, show_ramadan, show_standard_ruku, show_page_theme_ruku,
+                                       enabled_divisions=divisions, progress_callback=on_progress,
+                                       show_themes=show_themes)
                 self.root.after(0, self._on_done, out_path, None)
             except Exception as e:
                 self.root.after(0, self._on_done, out_path, e)

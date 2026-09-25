@@ -8,7 +8,7 @@
 //    cache when build_app_data.py reports a new pages version.
 // ------------------------------------------------------------------
 
-const SHELL_VERSION = 'v8';
+const SHELL_VERSION = 'v9';
 const SHELL_CACHE = `quran-shell-${SHELL_VERSION}`;
 const PAGES_CACHE = 'quran-pages';
 
