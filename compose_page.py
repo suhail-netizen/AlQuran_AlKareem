@@ -240,7 +240,7 @@ def build_page_html(data: MushafData, page_num: int, show_ramadan: bool = False,
     # ayah it was calibrated against but was badly off on others, since that offset isn't constant.
     FILL_R = 13
 
-    def _fill_circle_html(e):
+    def _fill_circle_html(e, extra_class=''):
         # Nested inside .text, so positions are LOCAL to it (no TEXT_LEFT/TEXT_TOP) - but the same
         # MARGIN_X/MARGIN_Y letterbox offset still applies, since it's internal to that box too.
         # ayah_positions.json stores raw (un-normalized) viewBox coordinates, so vb_min_x/vb_min_y
@@ -251,7 +251,8 @@ def build_page_html(data: MushafData, page_num: int, show_ramadan: bool = False,
         left = MARGIN_X + (cx - FILL_R) * SCALE
         top = MARGIN_Y + (cy - FILL_R) * SCALE
         w = h = FILL_R * 2 * SCALE
-        return f'<div class="marker-fill" style="left:{left}px; top:{top}px; width:{w}px; height:{h}px;"></div>'
+        cls = f'marker-fill {extra_class}'.strip()
+        return f'<div class="{cls}" style="left:{left}px; top:{top}px; width:{w}px; height:{h}px;"></div>'
 
     def _label_above_html(e, label_text):
         # Centered above the filled circle (not beside it), so it never crowds the adjacent word -
@@ -275,13 +276,13 @@ def build_page_html(data: MushafData, page_num: int, show_ramadan: bool = False,
     standard_fill_html = ''
     if show_standard_ruku:
         for e in data.standard_markers.get(str(page_num), []):
-            standard_fill_html += _fill_circle_html(e)
+            standard_fill_html += _fill_circle_html(e, 'marker-fill-standard')
 
     rakah_fill_html = ''
     marker_html = ''
     if show_ramadan:
         for e in data.rakah_markers.get(str(page_num), []):
-            rakah_fill_html += _fill_circle_html(e)
+            rakah_fill_html += _fill_circle_html(e, 'marker-fill-ramadan')
             marker_html += _label_above_html(e, f"{SESSION_AR[e['session']]} {e['rakah']}")
 
     def _avoid_rakah_labels(center, top, label_text):

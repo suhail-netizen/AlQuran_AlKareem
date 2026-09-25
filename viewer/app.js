@@ -186,6 +186,30 @@ function setupLayerSwitch(inputId, storageKey, cssVar, name) {
   });
 }
 
+// The ruku/khatm radio group: at most one of "standard" or "ramadan" is shown at a time (or
+// neither, for "none"). Every page already carries both marker layers (see build_pages.py); this
+// only switches which one is visible, through the same CSS-variable-on-<body> mechanism as
+// setupLayerSwitch, so it also reaches every page's shadow root (see PAGE_EXTRA_CSS).
+const KHATM_LABEL = { none: 'لا شيء', standard: 'علامات الركوع', ramadan: 'ختمة رمضان' };
+function setupKhatmRadio() {
+  const radios = [...document.querySelectorAll('input[name="khatm-mode"]')];
+  const apply = (mode) => {
+    document.body.style.setProperty('--standard-display', mode === 'standard' ? 'block' : 'none');
+    document.body.style.setProperty('--ramadan-display', mode === 'ramadan' ? 'block' : 'none');
+  };
+  let mode = 'none';
+  try { mode = localStorage.getItem('quran.khatmMode') || 'none'; } catch (e) { /* ignore */ }
+  if (!(mode in KHATM_LABEL)) mode = 'none';
+  (radios.find((r) => r.value === mode) || radios[0]).checked = true;
+  apply(mode);
+  radios.forEach((r) => r.addEventListener('change', () => {
+    if (!r.checked) return;
+    apply(r.value);
+    try { localStorage.setItem('quran.khatmMode', r.value); } catch (e) { /* ignore */ }
+    toast(KHATM_LABEL[r.value]);
+  }));
+}
+
 function setupHelp() {
   const help = $('help');
   const close = () => {
@@ -244,7 +268,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupSheet();
   setupKeyboard();
   setupHelp();
-  setupLayerSwitch('khatm-toggle', 'quran.showKhatm', '--khatm-display', 'علامات ختم القرآن في القيام');
+  setupKhatmRadio();
   setupLayerSwitch('theme-toggle', 'quran.showThemes', '--theme-display', 'التلوين الموضوعي');
   setupOffline();
   window.addEventListener('hashchange', () => {
@@ -263,9 +287,11 @@ const PAGE_EXTRA_CSS = `
   .text * { pointer-events: none; }            /* glyphs sit above the ayah outlines: let taps through */
   .text .ayahPolygon { pointer-events: all; cursor: pointer; transition: fill-opacity .15s; }
   .ayahPolygon:hover { fill: #d4af37; fill-opacity: .12; }
-  /* Khatm-in-qiyam markers (ruku circle + تراويح/تهجد label, and the الليلة label at the top):
-     the menu switch sets --khatm-display on <body>. */
-  .marker-fill, .marker-label, .night-label { display: var(--khatm-display, block); }
+  /* Ruku/khatm marker layers: every page carries both, the radio group sets --standard-display /
+     --ramadan-display on <body> so at most one shows. Ramadan also draws the تراويح/تهجد label
+     above its circle and the الليلة banner at the page top. */
+  .marker-fill-standard { display: var(--standard-display, none); }
+  .marker-fill-ramadan, .marker-label, .night-label { display: var(--ramadan-display, none); }
   /* Thematic colouring: the tinted layer under the text; --theme-display from its menu switch. */
   .text svg.theme-layer { display: var(--theme-display, block); }
   .ayahPolygon.selected { fill: #d4af37; fill-opacity: .35; }

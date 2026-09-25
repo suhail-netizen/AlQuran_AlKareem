@@ -69,11 +69,21 @@
         <button class="tab" data-tab="juz" role="tab">الأجزاء</button>
         <button class="tab" data-tab="bookmarks" role="tab">المحفوظات</button>
       </div>
-      <label class="switch-row">
-        <span>علامات ختم القرآن في القيام <small>(الليلة، تراويح، تهجد)</small></span>
-        <input id="khatm-toggle" type="checkbox" role="switch" checked>
-        <span class="switch" aria-hidden="true"></span>
-      </label>
+      <fieldset class="radio-group">
+        <legend>علامات الركوع وختم القرآن</legend>
+        <label class="radio-row">
+          <input type="radio" name="khatm-mode" value="none" checked>
+          <span>لا شيء</span>
+        </label>
+        <label class="radio-row">
+          <input type="radio" name="khatm-mode" value="standard">
+          <span>علامات الركوع <small>(التقسيم القياسي)</small></span>
+        </label>
+        <label class="radio-row">
+          <input type="radio" name="khatm-mode" value="ramadan">
+          <span>ختمة رمضان <small>(الليلة، تراويح، تهجد)</small></span>
+        </label>
+      </fieldset>
       <label class="switch-row">
         <span>التلوين الموضوعي <small>(ألوان موضوعات الآيات)</small></span>
         <input id="theme-toggle" type="checkbox" role="switch" checked>
@@ -137,7 +147,7 @@
         <li><b>الفهرس:</b> زر «الفهرس» أعلى الشاشة يفتح قائمة السور والأجزاء والمحفوظات، ومنه تنتقل إلى أي صفحة.</li>
         <li><b>حفظ الصفحة:</b> زر «حفظ الصفحة» يضعها في المحفوظات لتعود إليها لاحقًا.</li>
         <li><b>الآية:</b> اضغط على أي آية لتظهر لك نصّها وموضوعها، مع زرَّي النسخ والحفظ.</li>
-        <li><b>علامات ختم القرآن في القيام:</b> «الليلة» و«تراويح» و«تهجد» يمكن إظهارها أو إخفاؤها من مفتاح في «الفهرس».</li>
+        <li><b>علامات الركوع وختم القرآن:</b> اختر من «الفهرس» بين لا شيء، أو علامات الركوع القياسية، أو علامات ختمة رمضان («الليلة» و«تراويح» و«تهجد»).</li>
         <li><b>التلوين الموضوعي:</b> ألوان الخلفية تميّز موضوعات الآيات، ويمكن إطفاؤها من مفتاح في «الفهرس» لقراءة صفحة بيضاء.</li>
         <li><b>متابعة القراءة:</b> يفتح التطبيق دائمًا على آخر صفحة قرأتها.</li>
       </ul>
